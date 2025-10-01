@@ -25,6 +25,13 @@
       },
       "style": {
         "noNonNullAssertion": "off"
+      },
+      "correctness": {
+        "noUnusedImports": {
+          "level": "warn",
+          "fix": "safe",
+          "options": {}
+        }
       }
     },
     "domains": {

@@ -1,14 +1,15 @@
 import { convertToModelMessages, streamText, type UIMessage } from "ai"
-import { calculateCostUSD, getModelById } from "@/lib/utils"
+import { computeMessageCostUSD, normalizeTokenUsage } from "@/lib/usage"
+import type { MessageMetadata } from "@/types/message"
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30
 
 export async function POST(req: Request) {
-  const { messages, model }: { messages: UIMessage[]; model: string } = await req.json()
+  const { messages, modelId }: { messages: UIMessage[]; modelId: string } = await req.json()
 
   const result = streamText({
-    model,
+    model: modelId,
     messages: convertToModelMessages(messages),
   })
 
@@ -16,9 +17,12 @@ export async function POST(req: Request) {
     messageMetadata: ({ part }) => {
       if (part.type === "finish") {
         return {
-          usage: part.totalUsage,
-          cost: calculateCostUSD({ model: getModelById(model), totalUsage: part.totalUsage }),
-        }
+          modelId,
+          usage: {
+            tokens: normalizeTokenUsage(part.totalUsage),
+            cost: computeMessageCostUSD(modelId, part.totalUsage),
+          },
+        } as MessageMetadata
       }
     },
   })
